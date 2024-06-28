@@ -2,6 +2,13 @@ import express from "express";
 import cors from "cors";
 import connectDB from "./mongodb";
 
+import authRouter from "./routers/auth.router";
+import userRouter from "./routers/user.router";
+import plantRouter from "./routers/plant.router"
+import taskRouter from "./routers/task.router"
+import messageRouter from "./routers/message.router"
+import healthLogRouter from "./routers/healthLog.router"
+
 const app = express();
 app.use(cors({
     origin: function (origin, callback) {
@@ -23,7 +30,12 @@ app.use(express.urlencoded({extended: true}));
 app.get("/", (req, res) => {
     res.send({message: "Hello From Aarchid API"});
 });
-
+app.use('/api/auth', authRouter);
+app.use('/api/user', userRouter);
+app.use('/api/plant', plantRouter);
+app.use('/api/task', taskRouter);
+app.use('/api/message', messageRouter);
+app.use('/api/healthlog', healthLogRouter);
 
 export const startServer = async () => {
     try {

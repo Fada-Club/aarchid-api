@@ -1,26 +1,44 @@
-import jwt from 'jsonwebtoken';
-// import User from '../mongodb/models/user.js';
+import { Request, Response, NextFunction } from 'express';
+import jwt, { JwtPayload } from 'jsonwebtoken';
+import User from '../mongodb/models/user.js';
 import multer from "multer";
+import { CustomRequest } from './types.js';
 
 
-export const isLoggedIn = async (req, res, next) => {
+
+export const isLoggedIn = async (req: CustomRequest, res: Response, next: NextFunction) => {
+  // console.log(req.header('Authorization'));
+
   const token = req.header('Authorization');
-  console.log(token);
   if (!token) {
     return res.status(401).json({
       success: false,
       message: 'Please login to access resource',
     });
   }
+ 
   try {
+    if (!process.env.AUTH_SECRET) {
+      throw new Error('AUTH_SECRET is not set');
+    }
+    const decoded = jwt.verify(token, process.env.AUTH_SECRET) as JwtPayload;
     
-    if (typeof process.env.AUTH_SECRET === 'undefined') {
-      throw new Error('GEMINI_API_KEY is not set');
+ 
+    if (!decoded._id) {
+      throw new Error('Invalid token payload');
+    }
+ 
+    const user = await User.findById(decoded._id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
     }
 
-    const userId = jwt.verify(token, process.env.AUTH_SECRET);
-    const user = await User.findById(userId.id);
+    //ts-ignore
     req.user = user;
+
     next();
   } catch (error) {
     if (error instanceof jwt.JsonWebTokenError) {
@@ -36,16 +54,18 @@ export const isLoggedIn = async (req, res, next) => {
   }
 };
 
-
-export const isOwner = async (req, res, next) => {
+export const isOwner = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const token = req.header('Authorization'); 
-    const decodedToken = jwt.verify(token, process.env.AUTH_SECRET);
-    const currentUserId = decodedToken._id;
-    
+    const token = req.header('Authorization');
+    if (!token || !process.env.AUTH_SECRET) {
+      throw new Error('Authentication required');
+    }
 
-    if (!id|| !currentUserId) {
+    const decodedToken = jwt.verify(token, process.env.AUTH_SECRET) as JwtPayload;
+    const currentUserId = decodedToken._id;
+
+    if (!id || !currentUserId) {
       return res.status(400).json({
         success: false,
         message: 'User not authenticated',
@@ -69,19 +89,13 @@ export const isOwner = async (req, res, next) => {
   }
 };
 
-
-
-
 const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-      cb(null, "./public/temp")
-    },
-    filename: function (req, file, cb) {
-      
-      cb(null, file.originalname)
-    }
-  })
-  
-export const upload = multer({ 
-    storage, 
+  destination: function (req, file, cb) {
+    cb(null, "./public/temp")
+  },
+  filename: function (req, file, cb) {
+    cb(null, file.originalname)
+  }
 })
+
+export const upload = multer({ storage });
