@@ -12,7 +12,7 @@ import healthLogRouter from "./routers/healthLog.router"
 const app = express();
 app.use(cors({
     origin: function (origin, callback) {
-      const allowedOrigins = ['http://localhost:5173','https://aarkid-client.vercel.app'];
+      const allowedOrigins = ['http://localhost:3000','http://localhost:5173','https://aarkid-client.vercel.app'];
       if (!origin || allowedOrigins.indexOf(origin) !== -1) {
         callback(null, true)
       } else {
