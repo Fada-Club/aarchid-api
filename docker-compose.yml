@@ -1,0 +1,10 @@
+version: "3.8"
+
+services:
+  web:
+    container_name: aarchid-api
+    image: dfordp/aarchid-latest
+    env_file:
+      - .env
+    ports:
+      - "8080:8080"
