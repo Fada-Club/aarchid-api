@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { getPlants, getPlantById, getPlantsByUserId, createPlant, deletePlantById, updatePlantById } from '../mongodb/models/plant.js';
 import { uploadOnCloudinary } from '../utlils/cloudinary.js';
+import { getValuePair, setValuePair } from '../utlils/redis.js';
 
 export const getAllPlants = async (req: Request, res: Response): Promise<Response> => {
   try {
@@ -18,10 +19,21 @@ export const getPlant = async (req: Request, res: Response): Promise<Response> =
     if (!id) {
       return res.status(400).json({ message: 'No id provided' });
     }
+
+    const redis = await getValuePair(`plant/${id}`);
+
+
+    if(redis){
+      return res.json(redis);
+    }
+
+
     const plant = await getPlantById(id);
     if (!plant) {
       return res.status(404).json({ message: 'Plant not found' });
     }
+
+    await setValuePair(`plant/${id}`, plant);
     return res.json(plant);
   } catch (error) {
     console.error(error);
@@ -35,10 +47,17 @@ export const getPlantsByuserId = async (req: Request, res: Response): Promise<Re
     if (!id) {
       return res.status(400).json({ message: 'No user_id provided' });
     }
+    const redis = await getValuePair(`plants/user/${id}`);
+
+    if(redis){
+      return res.json(redis);
+    }
+
     const plants = await getPlantsByUserId(id);
     if (!plants) {
       return res.status(404).json({ message: 'Plants not found' });
     }
+    await setValuePair(`plants/user/${id}`, plants);
     return res.json(plants);
   } catch (error) {
     console.error(error);

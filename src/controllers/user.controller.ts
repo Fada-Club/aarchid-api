@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { generateAuthToken } from '../helpers/index.js';
 import { getUsers, getUserById, getuserByEmail } from '../mongodb/models/user.js';
+import { getValuePair, setValuePair } from '../utlils/redis.js';
 
 export const getAllUsers = async (req: Request, res: Response): Promise<Response> => {
   
@@ -16,12 +17,21 @@ export const getAllUsers = async (req: Request, res: Response): Promise<Response
 export const getUser = async (req: Request, res: Response): Promise<Response> => {
   try {
     const { id } = req.params;
+
+    const redis = await getValuePair(`users/${id}`);
+
+
+    if(redis){
+      return res.json(redis);
+    }
+
     const user = await getUserById(id);
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
+    await setValuePair(`users/${id}`, user);
     return res.json(user);
   } catch (error) {
     console.log(error);

@@ -11,9 +11,11 @@ import {
 import { getPlantById } from '../mongodb/models/plant.js';
 import { uploadOnCloudinary } from '../utlils/cloudinary.js';
 import { convertoBuffer, provideHealthlog } from '../utlils/gemini.js';
+import { getValuePair, setValuePair } from '../utlils/redis.js';
 
 export const getAllHealthLogs = async (req: Request, res: Response): Promise<Response> => {
   try {
+
     const healthLogs = await getHealthLogs();
     return res.status(200).json(healthLogs);
   } catch (error) {
@@ -28,10 +30,17 @@ export const getHealthLog = async (req: Request, res: Response): Promise<Respons
     if (!id) {
       return res.status(400).json({ message: 'No id provided' });
     }
+
+    const redis = await getValuePair(`healthlog/${id}`);
+
+    if(redis){
+      return res.json(redis);
+    }
     const healthLog = await getHealthLogById(id);
     if (!healthLog) {
       return res.status(404).json({ message: 'HealthLog not found' });
     }
+    await setValuePair(`healthlog/${id}`, healthLog);
     return res.json(healthLog);
   } catch (error) {
     console.error(error);
@@ -45,10 +54,19 @@ export const getHealthLogsByUserId = async (req: Request, res: Response): Promis
     if (!id) {
       return res.status(400).json({ message: 'No user_id provided' });
     }
+    
+    const redis = await getValuePair(`healthlogs/user/${id}`);
+
+    if(redis){
+      return res.json(redis);
+    }
+
+    
     const healthLogs = await gethealthLogsByUserId(id);
     if (!healthLogs) {
       return res.status(404).json({ message: 'HealthLogs not found' });
     }
+    await setValuePair(`healthlogs/user/${id}`, healthLogs);
     return res.json(healthLogs);
   } catch (error) {
     console.error(error);
@@ -62,10 +80,17 @@ export const getHealthLogsByPlantId = async (req: Request, res: Response): Promi
     if (!id) {
       return res.status(400).json({ message: 'No plant_id provided' });
     }
+
+    const redis = await getValuePair(`healthlogs/plant/${id}`);
+
+    if(redis){
+      return res.json(redis);
+    }
     const healthLogs = await gethealthLogsByPlantId(id);
     if (!healthLogs) {
       return res.status(404).json({ message: 'HealthLogs not found' });
     }
+    await setValuePair(`healthlogs/plant/${id}`, healthLogs);
     return res.json(healthLogs);
   } catch (error) {
     console.error(error);
