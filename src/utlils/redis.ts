@@ -5,7 +5,7 @@ const redis = new Redis(process.env.REDIS_URI);
 
 export const setValuePair = async (key: string, val: object) => {
     try {
-        await redis.set(key, JSON.stringify(val));
+        await redis.set(key, JSON.stringify(val), "EX" , 600);
         console.log("Value set successfully");
     } catch (error) {
         console.error("Error setting value:", error);
